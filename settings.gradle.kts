@@ -24,4 +24,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Smart Notes POS Lite"
 include(":app")
- 
