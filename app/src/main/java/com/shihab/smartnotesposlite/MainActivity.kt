@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
             SmartNotesPOSLiteTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     val viewModel: PosViewModel = viewModel(factory = factory)
                     PosScreen(viewModel)
@@ -63,12 +63,11 @@ fun PosScreen(viewModel: PosViewModel) {
     var productPrice by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.padding(16.dp)) {
-
         OutlinedTextField(
             value = productName,
             onValueChange = { productName = it },
             label = { Text("Product Name") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -76,7 +75,7 @@ fun PosScreen(viewModel: PosViewModel) {
             value = productPrice,
             onValueChange = { productPrice = it },
             label = { Text("Price") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -86,7 +85,7 @@ fun PosScreen(viewModel: PosViewModel) {
                 productName = ""
                 productPrice = ""
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Save Product")
         }
@@ -97,14 +96,18 @@ fun PosScreen(viewModel: PosViewModel) {
 
         LazyColumn {
             items(productList) { product ->
-                Card(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)) {
+                Card(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                ) {
                     Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier =
+                            Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(text = product.name, style = MaterialTheme.typography.bodyLarge)
                         Text(text = "৳${product.price}", style = MaterialTheme.typography.bodyLarge)
