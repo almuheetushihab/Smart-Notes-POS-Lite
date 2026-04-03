@@ -6,29 +6,28 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.shihab.smartnotesposlite.data.models.Product
 import com.shihab.smartnotesposlite.ui.viewmodel.PosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PosScreen(viewModel: PosViewModel) {
-    val productList by viewModel.productList.collectAsState()
-
-    var productName by remember { mutableStateOf("") }
-    var productPrice by remember { mutableStateOf("") }
-    var searchQuery by remember { mutableStateOf("") }
-    var editingProductId by remember { mutableStateOf<Long?>(null) }
-
-    val filteredList = productList.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
-    }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val cartItems by viewModel.cartItems.collectAsState()
+    val totalAmount by viewModel.totalAmount.collectAsState()
 
     Scaffold(
         topBar = {
@@ -38,136 +37,190 @@ fun PosScreen(viewModel: PosViewModel) {
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
+        },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    label = { Text("Inventory") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = { 
+                        BadgedBox(badge = { if(cartItems.isNotEmpty()) Badge { Text(cartItems.size.toString()) } }) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                        }
+                    },
+                    label = { Text("Sell") }
+                )
+            }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
+        Box(modifier = Modifier.padding(paddingValues)) {
+            if (selectedTab == 0) {
+                InventoryTab(viewModel)
+            } else {
+                SellTab(viewModel, cartItems, totalAmount)
+            }
+        }
+    }
+}
+
+@Composable
+fun InventoryTab(viewModel: PosViewModel) {
+    val productList by viewModel.productList.collectAsState()
+    var productName by remember { mutableStateOf("") }
+    var productPrice by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") }
+    var editingProductId by remember { mutableStateOf<Long?>(null) }
+
+    val filteredList = productList.filter {
+        it.name.contains(searchQuery, ignoreCase = true)
+    }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        // Input Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            // --- Input Section ---
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = if (editingProductId == null) "Add Product" else "Edit Product",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = productName,
-                        onValueChange = { productName = it },
-                        label = { Text("Product Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = productPrice,
-                        onValueChange = { productPrice = it },
-                        label = { Text("Price (৳)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = {
-                                if (productName.isNotBlank() && productPrice.isNotBlank()) {
-                                    viewModel.saveProduct(editingProductId, productName, productPrice)
-                                    productName = ""
-                                    productPrice = ""
-                                    editingProductId = null
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(if (editingProductId == null) "Save" else "Update")
-                        }
-                        if (editingProductId != null) {
-                            OutlinedButton(
-                                onClick = {
-                                    productName = ""
-                                    productPrice = ""
-                                    editingProductId = null
-                                },
-                                modifier = Modifier.weight(0.5f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text("Cancel")
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(text = if (editingProductId == null) "Add Product" else "Edit Product", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(value = productName, onValueChange = { productName = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = productPrice, onValueChange = { productPrice = it }, label = { Text("Price (৳)") }, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        viewModel.saveProduct(editingProductId, productName, productPrice)
+                        productName = ""; productPrice = ""; editingProductId = null
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (editingProductId == null) "Save Product" else "Update Product")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = searchQuery, onValueChange = { searchQuery = it },
+            placeholder = { Text("Search Inventory...") },
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            shape = RoundedCornerShape(25.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(filteredList) { product ->
+                ProductItemRow(product, 
+                    onEdit = { 
+                        productName = product.name
+                        productPrice = product.price.toString()
+                        editingProductId = product.id
+                    },
+                    onDelete = { viewModel.deleteProduct(product) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SellTab(viewModel: PosViewModel, cartItems: List<com.shihab.smartnotesposlite.data.models.CartItem>, totalAmount: Double) {
+    val productList by viewModel.productList.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Billing Section", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Cart Summary Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Total Amount", style = MaterialTheme.typography.bodyMedium)
+                    Text("৳ ${String.format("%.2f", totalAmount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                }
+                Button(onClick = { viewModel.clearCart() }, enabled = cartItems.isNotEmpty()) {
+                    Text("Checkout")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = searchQuery, onValueChange = { searchQuery = it },
+            placeholder = { Text("Search to Add...") },
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+            shape = RoundedCornerShape(25.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Cart Items List
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                item { Text("Cart Items", fontWeight = FontWeight.Bold) }
+                items(cartItems) { item ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.product.name, fontWeight = FontWeight.Bold)
+                                Text("${item.quantity} x ৳${item.product.price}")
+                            }
+                            IconButton(onClick = { viewModel.removeFromCart(item.product) }) {
+                                Icon(Icons.Default.Clear, contentDescription = null, tint = Color.Red)
                             }
                         }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // --- Search Bar ---
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search products...") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = RoundedCornerShape(25.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- Product List ---
-            Text(
-                text = "Inventory (${filteredList.size})",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(filteredList) { product ->
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            // Quick Add List
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                item { Text("Quick Add", fontWeight = FontWeight.Bold) }
+                val filtered = productList.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                items(filtered) { product ->
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                productName = product.name
-                                productPrice = product.price.toString()
-                                editingProductId = product.id
-                            },
-                        elevation = CardDefaults.cardElevation(2.dp),
-                        shape = RoundedCornerShape(10.dp)
+                        modifier = Modifier.fillMaxWidth().clickable { viewModel.addToCart(product) },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = product.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "৳ ${product.price}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                            IconButton(
-                                onClick = { viewModel.deleteProduct(product) },
-                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete")
-                            }
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text(product.name, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text("৳${product.price}", fontSize = 12.sp)
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProductItemRow(product: Product, onEdit: () -> Unit, onDelete: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onEdit() },
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = product.name, fontWeight = FontWeight.Bold)
+                Text(text = "৳ ${product.price}", color = MaterialTheme.colorScheme.secondary)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             }
         }
     }
