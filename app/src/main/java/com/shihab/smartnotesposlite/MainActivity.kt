@@ -17,8 +17,7 @@ import com.shihab.smartnotesposlite.ui.viewmodel.PosViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Initialize Room Database and Repository
+
         val database = AppDatabase.getDatabase(applicationContext)
         val repository = ProductRepository(database.productDao())
         val factory = PosViewModel.PosViewModelFactory(repository)
