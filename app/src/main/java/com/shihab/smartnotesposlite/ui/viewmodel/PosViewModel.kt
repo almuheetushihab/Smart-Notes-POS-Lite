@@ -55,6 +55,11 @@ class PosViewModel(private val repository: ProductRepository) : ViewModel() {
         }
     }
 
+    // Added for compatibility with MainActivity
+    fun saveNewProduct(name: String, priceString: String) {
+        saveProduct(null, name, priceString)
+    }
+
     fun deleteProduct(product: Product) {
         viewModelScope.launch {
             repository.deleteProduct(product.id)
