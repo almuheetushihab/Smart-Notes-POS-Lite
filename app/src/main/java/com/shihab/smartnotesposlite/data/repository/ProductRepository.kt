@@ -1,32 +1,22 @@
 package com.shihab.smartnotesposlite.data.repository
 
-import com.shihab.smartnotesposlite.data.local.PosStorageManager
+import com.shihab.smartnotesposlite.data.local.ProductDao
 import com.shihab.smartnotesposlite.data.models.Product
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 
-class ProductRepository(private val storageManager: PosStorageManager) {
+class ProductRepository(private val productDao: ProductDao) {
 
-    val allProducts: Flow<List<Product>> = storageManager.getSavedProducts
+    val allProducts: Flow<List<Product>> = productDao.getAllProducts()
 
     suspend fun addProduct(newProduct: Product) {
-        val currentList = allProducts.first().toMutableList()
-        currentList.add(newProduct)
-        storageManager.saveProducts(currentList)
+        productDao.insertProduct(newProduct)
     }
 
     suspend fun updateProduct(updatedProduct: Product) {
-        val currentList = allProducts.first().toMutableList()
-        val index = currentList.indexOfFirst { it.id == updatedProduct.id }
-        if (index != -1) {
-            currentList[index] = updatedProduct
-            storageManager.saveProducts(currentList)
-        }
+        productDao.updateProduct(updatedProduct)
     }
 
     suspend fun deleteProduct(productId: Long) {
-        val currentList = allProducts.first().toMutableList()
-        currentList.removeAll { it.id == productId }
-        storageManager.saveProducts(currentList)
+        productDao.deleteProductById(productId)
     }
 }
