@@ -9,7 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shihab.smartnotesposlite.data.local.AppDatabase
-import com.shihab.smartnotesposlite.data.repository.ProductRepository
+import com.shihab.smartnotesposlite.data.repository.PosRepository
 import com.shihab.smartnotesposlite.ui.screen.possell.PosScreen
 import com.shihab.smartnotesposlite.ui.theme.SmartNotesPOSLiteTheme
 import com.shihab.smartnotesposlite.ui.screen.possell.PosViewModel
@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = ProductRepository(database.productDao())
+        val repository = PosRepository(database.productDao(), database.saleDao())
         val factory = PosViewModel.PosViewModelFactory(repository)
 
         setContent {

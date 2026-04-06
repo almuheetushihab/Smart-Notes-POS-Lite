@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.shihab.smartnotesposlite.data.models.CartItem
 import com.shihab.smartnotesposlite.data.models.Product
-import com.shihab.smartnotesposlite.data.repository.ProductRepository
+import com.shihab.smartnotesposlite.data.models.Sale
+import com.shihab.smartnotesposlite.data.models.SaleItem
+import com.shihab.smartnotesposlite.data.models.SaleWithItems
+import com.shihab.smartnotesposlite.data.repository.PosRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,15 +17,22 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.collections.plus
 
-class PosViewModel(private val repository: ProductRepository) : ViewModel() {
+class PosViewModel(private val repository: PosRepository) : ViewModel() {
 
     // Products from repository
     val productList: StateFlow<List<Product>> = repository.allProducts
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Companion.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // Sales history
+    val salesHistory: StateFlow<List<SaleWithItems>> = repository.allSales
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
@@ -33,7 +43,7 @@ class PosViewModel(private val repository: ProductRepository) : ViewModel() {
     // Total price calculation
     val totalAmount: StateFlow<Double> = _cartItems.map { items ->
         items.sumOf { it.totalPrice }
-    }.stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), 0.0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     // --- Product CRUD ---
 
@@ -49,22 +59,16 @@ class PosViewModel(private val repository: ProductRepository) : ViewModel() {
                     )
                     repository.addProduct(newProduct)
                 } else {
-                    val updatedProduct = Product(id, name, price)
+                    val updatedProduct = Product(id ?: 0, name, price)
                     repository.updateProduct(updatedProduct)
                 }
             }
         }
     }
 
-    // Added for compatibility with MainActivity
-    fun saveNewProduct(name: String, priceString: String) {
-        saveProduct(null, name, priceString)
-    }
-
     fun deleteProduct(product: Product) {
         viewModelScope.launch {
             repository.deleteProduct(product.id)
-            // Also remove from cart if present
             removeFromCart(product)
         }
     }
@@ -101,11 +105,32 @@ class PosViewModel(private val repository: ProductRepository) : ViewModel() {
         }
     }
 
+    fun completeCheckout() {
+        val currentCart = _cartItems.value
+        if (currentCart.isEmpty()) return
+
+        viewModelScope.launch {
+            val total = currentCart.sumOf { it.totalPrice }
+            val sale = Sale(totalAmount = total)
+            val saleItems = currentCart.map { cartItem ->
+                SaleItem(
+                    saleId = 0, // Will be set by SaleDao.completeSale
+                    productId = cartItem.product.id,
+                    productName = cartItem.product.name,
+                    price = cartItem.product.price,
+                    quantity = cartItem.quantity
+                )
+            }
+            repository.completeSale(sale, saleItems)
+            clearCart()
+        }
+    }
+
     fun clearCart() {
         _cartItems.value = emptyList()
     }
 
-    class PosViewModelFactory(private val repository: ProductRepository) :
+    class PosViewModelFactory(private val repository: PosRepository) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(PosViewModel::class.java)) {

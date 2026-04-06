@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -39,7 +38,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,68 +49,54 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shihab.smartnotesposlite.data.models.CartItem
 import com.shihab.smartnotesposlite.data.models.Product
-import com.shihab.smartnotesposlite.ui.screen.possell.PosViewModel
+import com.shihab.smartnotesposlite.ui.navigation.Screen
+import com.shihab.smartnotesposlite.ui.screen.history.HistoryScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PosScreen(viewModel: PosViewModel) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Inventory) }
     val cartItems by viewModel.cartItems.collectAsState()
-    val totalAmount by viewModel.totalAmount.collectAsState()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Smart POS Lite",
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-                colors =
-                    TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    ),
+                title = { Text("Smart POS Lite", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
             )
         },
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text("Inventory") },
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = {
-                        BadgedBox(badge = {
-                            if (cartItems.isNotEmpty()) {
-                                Badge { Text(cartItems.size.toString()) }
+                Screen.items.forEach { screen ->
+                    NavigationBarItem(
+                        selected = currentScreen == screen,
+                        onClick = { currentScreen = screen },
+                        icon = {
+                            if (screen is Screen.Sell) {
+                                BadgedBox(badge = {
+                                    if (cartItems.isNotEmpty()) {
+                                        Badge { Text(cartItems.size.toString()) }
+                                    }
+                                }) {
+                                    Icon(screen.icon, contentDescription = null)
+                                }
+                            } else {
+                                Icon(screen.icon, contentDescription = null)
                             }
-                        }) {
-                            Icon(
-                                Icons.Default.ShoppingCart,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    label = { Text("Sell") },
-                )
+                        },
+                        label = { Text(screen.title) },
+                    )
+                }
             }
         },
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
-            if (selectedTab == 0) {
-                InventoryTab(viewModel)
-            } else {
-                SellTab(viewModel, cartItems, totalAmount)
+            when (currentScreen) {
+                is Screen.Inventory -> InventoryTab(viewModel)
+                is Screen.Sell -> SellTab(viewModel)
+                is Screen.History -> HistoryScreen(viewModel)
             }
         }
     }
@@ -126,13 +110,11 @@ fun InventoryTab(viewModel: PosViewModel) {
     var searchQuery by remember { mutableStateOf("") }
     var editingProductId by remember { mutableStateOf<Long?>(null) }
 
-    val filteredList =
-        productList.filter {
-            it.name.contains(searchQuery, ignoreCase = true)
-        }
+    val filteredList = productList.filter {
+        it.name.contains(searchQuery, ignoreCase = true)
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        // Input Section
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -199,40 +181,26 @@ fun InventoryTab(viewModel: PosViewModel) {
 }
 
 @Composable
-fun SellTab(
-    viewModel: PosViewModel,
-    cartItems: List<CartItem>,
-    totalAmount: Double,
-) {
+fun SellTab(viewModel: PosViewModel) {
+    val cartItems by viewModel.cartItems.collectAsState()
+    val totalAmount by viewModel.totalAmount.collectAsState()
     val productList by viewModel.productList.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            "Billing Section",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
+        Text("Billing Section", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Cart Summary Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Total Amount", style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        "৳ ${String.format("%.2f", totalAmount)}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Text("৳ ${String.format("%.2f", totalAmount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 }
-                Button(onClick = { viewModel.clearCart() }, enabled = cartItems.isNotEmpty()) {
+                Button(onClick = { viewModel.completeCheckout() }, enabled = cartItems.isNotEmpty()) {
                     Text("Checkout")
                 }
             }
@@ -251,28 +219,17 @@ fun SellTab(
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(modifier = Modifier.fillMaxSize()) {
-            // Cart Items List
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item { Text("Cart Items", fontWeight = FontWeight.Bold) }
                 items(cartItems) { item ->
                     Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(item.product.name, fontWeight = FontWeight.Bold)
                                 Text("${item.quantity} x ৳${item.product.price}")
                             }
                             IconButton(onClick = { viewModel.removeFromCart(item.product) }) {
-                                Icon(
-                                    Icons.Default.Clear,
-                                    contentDescription = null,
-                                    tint = Color.Red,
-                                )
+                                Icon(Icons.Default.Clear, contentDescription = null, tint = Color.Red)
                             }
                         }
                     }
@@ -281,20 +238,12 @@ fun SellTab(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Quick Add List
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item { Text("Quick Add", fontWeight = FontWeight.Bold) }
-                val filtered =
-                    productList.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                val filtered = productList.filter { it.name.contains(searchQuery, ignoreCase = true) }
                 items(filtered) { product ->
                     Card(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.addToCart(product) },
+                        modifier = Modifier.fillMaxWidth().clickable { viewModel.addToCart(product) },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
@@ -309,29 +258,15 @@ fun SellTab(
 }
 
 @Composable
-fun ProductItemRow(
-    product: Product,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable { onEdit() },
-        elevation = CardDefaults.cardElevation(2.dp),
-    ) {
+fun ProductItemRow(product: Product, onEdit: () -> Unit, onDelete: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onEdit() }, elevation = CardDefaults.cardElevation(2.dp)) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = product.name, fontWeight = FontWeight.Bold)
                 Text(text = "৳ ${product.price}", color = MaterialTheme.colorScheme.secondary)
             }
             IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                )
+                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             }
         }
     }
