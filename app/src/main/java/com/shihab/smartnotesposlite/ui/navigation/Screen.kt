@@ -7,11 +7,11 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Inventory : Screen("inventory", "Inventory", Icons.Default.Add)
-    object Sell : Screen("sell", "Sell", Icons.Default.ShoppingCart)
-    object History : Screen("history", "History", Icons.Default.History)
+    data object Inventory : Screen("inventory", "Inventory", Icons.Default.Add)
+    data object Sell : Screen("sell", "Sell", Icons.Default.ShoppingCart)
+    data object History : Screen("history", "History", Icons.Default.History)
 
     companion object {
-        val items = listOf(Inventory, Sell, History)
+        fun items() = listOf(Inventory, Sell, History)
     }
 }

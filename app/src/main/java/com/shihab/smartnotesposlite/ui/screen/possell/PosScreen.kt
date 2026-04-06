@@ -47,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.shihab.smartnotesposlite.data.models.CartItem
 import com.shihab.smartnotesposlite.data.models.Product
 import com.shihab.smartnotesposlite.ui.navigation.Screen
 import com.shihab.smartnotesposlite.ui.screen.history.HistoryScreen
@@ -69,7 +68,7 @@ fun PosScreen(viewModel: PosViewModel) {
         },
         bottomBar = {
             NavigationBar {
-                Screen.items.forEach { screen ->
+                Screen.items().forEach { screen ->
                     NavigationBarItem(
                         selected = currentScreen == screen,
                         onClick = { currentScreen = screen },
@@ -159,7 +158,12 @@ fun InventoryTab(viewModel: PosViewModel) {
             onValueChange = { searchQuery = it },
             placeholder = { Text("Search Inventory...") },
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null
+                )
+            },
             shape = RoundedCornerShape(25.dp),
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -188,19 +192,39 @@ fun SellTab(viewModel: PosViewModel) {
     var searchQuery by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text("Billing Section", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(
+            "Billing Section",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Total Amount", style = MaterialTheme.typography.bodyMedium)
-                    Text("৳ ${String.format("%.2f", totalAmount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                ) {
+                    Text(
+                        "Total Amount",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        "৳ ${String.format("%.2f", totalAmount)}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                Button(onClick = { viewModel.completeCheckout() }, enabled = cartItems.isNotEmpty()) {
+                Button(
+                    onClick = { viewModel.completeCheckout() },
+                    enabled = cartItems.isNotEmpty()
+                ) {
                     Text("Checkout")
                 }
             }
@@ -219,17 +243,34 @@ fun SellTab(viewModel: PosViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { Text("Cart Items", fontWeight = FontWeight.Bold) }
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    Text(
+                        "Cart Items",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 items(cartItems) { item ->
                     Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(item.product.name, fontWeight = FontWeight.Bold)
+                                Text(
+                                    item.product.name,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 Text("${item.quantity} x ৳${item.product.price}")
                             }
                             IconButton(onClick = { viewModel.removeFromCart(item.product) }) {
-                                Icon(Icons.Default.Clear, contentDescription = null, tint = Color.Red)
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = null, tint = Color.Red
+                                )
                             }
                         }
                     }
@@ -238,17 +279,34 @@ fun SellTab(viewModel: PosViewModel) {
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { Text("Quick Add", fontWeight = FontWeight.Bold) }
-                val filtered = productList.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    Text(
+                        "Quick Add",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                val filtered =
+                    productList.filter { it.name.contains(searchQuery, ignoreCase = true) }
                 items(filtered) { product ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().clickable { viewModel.addToCart(product) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.addToCart(product) },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
-                            Text(product.name, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            Text("৳${product.price}", fontSize = 12.sp)
+                            Text(
+                                product.name, fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "৳${product.price}",
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
@@ -259,14 +317,23 @@ fun SellTab(viewModel: PosViewModel) {
 
 @Composable
 fun ProductItemRow(product: Product, onEdit: () -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable { onEdit() }, elevation = CardDefaults.cardElevation(2.dp)) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit() },
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = product.name, fontWeight = FontWeight.Bold)
                 Text(text = "৳ ${product.price}", color = MaterialTheme.colorScheme.secondary)
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
