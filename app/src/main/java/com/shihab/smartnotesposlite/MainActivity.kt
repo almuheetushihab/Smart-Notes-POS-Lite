@@ -10,9 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shihab.smartnotesposlite.data.local.AppDatabase
 import com.shihab.smartnotesposlite.data.repository.ProductRepository
-import com.shihab.smartnotesposlite.ui.screen.PosScreen
+import com.shihab.smartnotesposlite.ui.screen.possell.PosScreen
 import com.shihab.smartnotesposlite.ui.theme.SmartNotesPOSLiteTheme
-import com.shihab.smartnotesposlite.ui.viewmodel.PosViewModel
+import com.shihab.smartnotesposlite.ui.screen.possell.PosViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

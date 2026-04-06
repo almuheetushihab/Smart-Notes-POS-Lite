@@ -1,4 +1,4 @@
-package com.shihab.smartnotesposlite.ui.viewmodel
+package com.shihab.smartnotesposlite.ui.screen.possell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.plus
 
 class PosViewModel(private val repository: ProductRepository) : ViewModel() {
 
@@ -21,7 +22,7 @@ class PosViewModel(private val repository: ProductRepository) : ViewModel() {
     val productList: StateFlow<List<Product>> = repository.allProducts
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
@@ -32,7 +33,7 @@ class PosViewModel(private val repository: ProductRepository) : ViewModel() {
     // Total price calculation
     val totalAmount: StateFlow<Double> = _cartItems.map { items ->
         items.sumOf { it.totalPrice }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    }.stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), 0.0)
 
     // --- Product CRUD ---
 
